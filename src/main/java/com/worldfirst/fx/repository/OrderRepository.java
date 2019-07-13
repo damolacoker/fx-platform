@@ -21,7 +21,7 @@ public class OrderRepository {
     private ConcurrentHashMap<String, Order> orderMap = new ConcurrentHashMap<String, Order>();
 
     public CompletableFuture<Optional<Order>> create(Order order) {
-        orderMap.put(order.getId(),order);
+        orderMap.putIfAbsent(order.getId(),order);
         Order r  = orderMap.get(order.getId());
         return CompletableFuture.completedFuture(Optional.ofNullable(orderMap.get(order.getId())));
     }
@@ -38,15 +38,15 @@ public class OrderRepository {
     public CompletableFuture<Optional<Order>> update(Order order) {
         Order updatedOrder = null;
         if(orderMap.containsKey(order.getId())){
-            updatedOrder = orderMap.replace(order.getId(),order);
+            updatedOrder = orderMap.putIfAbsent(order.getId(),order);
             return CompletableFuture.completedFuture(Optional.ofNullable(updatedOrder));
         }
         updatedOrder = orderMap.put(order.getId(),order);
         return CompletableFuture.completedFuture(Optional.ofNullable(updatedOrder));
     }
 
-    public CompletableFuture<Boolean> delete(Order order) {
-        Order orderToDel = orderMap.remove(order);
+    public synchronized CompletableFuture<Boolean> delete(Order order) {
+            Order orderToDel = orderMap.remove(order);
         Optional<Order> deletedOrder = Optional.ofNullable(orderToDel);
         if(deletedOrder.isPresent()){
             return CompletableFuture.completedFuture(Boolean.TRUE);
